@@ -27,3 +27,6 @@ class User(db.Model):
 
     def check_password(self, password):
         return check_password(self.password_hash, password)
+
+    def get_jwt_token(self):
+        pass
