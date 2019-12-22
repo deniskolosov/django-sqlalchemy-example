@@ -12,24 +12,24 @@ def user_auth(request):
         try:
             email = json_data['email']
             password = json_data['password']
-            user = get_object_or_404(User, email=email)
+            user = User.objects.filter(email=email).one_or_none()
+            if not user:
+                return JsonResponse({'status': 'false', 'message': 'No such user.'}, status=404,
+                                    content_type="application/json")
         except KeyError:
             return JsonResponse({'status': 'false', 'message': 'Please, provide both password and email.'}, status=500,
-                                content_type="application/json")
-        except Http404:
-            return JsonResponse({'status': 'false', 'message': 'No such user.'}, status=404,
                                 content_type="application/json")
         if not user.check_password(password):
             return JsonResponse({'status': 'false', 'message': 'Password is incorrect.'}, status=401,
                                 content_type="application/json")
-        token = user.get_jwt_token()
+        token = user.get_jwt_token(user_email=email, password=password)
         data = {
             'pk': user.pk,
             'first_name': user.first_name,
             'last_name': user.last_name,
             'middle_name': user.middle_name,
-            'birth_data': user.birth_date,
-            'nationality': user.nationality,
+            'birth_date': user.birth_date,
+            'nationality': user.nationality.name.name,
             'token': token,
         }
         return JsonResponse(data, content_type="application/json")
