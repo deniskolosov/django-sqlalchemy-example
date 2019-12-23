@@ -27,13 +27,10 @@ SECRET_KEY = '20m#bybvxe8^_*@6$78z9-ac3ygnulx!nngy=+wd5a-8rm6^w)'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -85,7 +82,7 @@ DATABASES = {
         'NAME': 'postgres',
         'USER': 'postgres',
         'PASSWORD': 'postgres',
-        'HOST': 'localhost',
+        'HOST': os.getenv('PSQLHOST', 'localhost'),
         'PORT': '5432',
         'TEST': {
             'NAME': 'mytestdb',
@@ -142,3 +139,5 @@ MIGRATION_MODULES = {
     'core': None,
     'scaffold_templates': None,
 }
+
+ALLOWED_HOSTS = ['*']

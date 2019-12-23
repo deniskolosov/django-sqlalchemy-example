@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta, date
 from sqlalchemy_utils import EmailType, CountryType
 
@@ -6,7 +7,7 @@ from django_sorcery.db import databases
 from jose import jws
 
 db = databases.get('default')
-db.url = 'postgresql://postgres:***@localhost:5432/postgres'
+db.url = 'postgresql://postgres:postgres@{}:5432/postgres'.format(os.getenv('PSQLHOST', 'localhost'))
 
 
 class Country(db.Model):
@@ -43,10 +44,10 @@ class User(db.Model):
 
     def get_jwt_token(self, user_email, password):
         """
-        Get jwt token from user email and password, which will expire in 7 days.
+        Get jwt token from user email and password.
         """
         expiry = date.today() + timedelta(days=7)
-        self.token = jws.sign({'email': user_email, 'expiry': expiry.strftime('%Y-%m-%d')}, password, algorithm='HS256')
+        self.token = jws.sign({'email': user_email}, password, algorithm='HS256')
         # We use django-sorcery middleware to commit in the end of each request.
         db.flush()
         return self.token

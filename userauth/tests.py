@@ -32,11 +32,12 @@ class APITestCase(TestCase):
         self.client = Client()
         self.url = reverse('user-auth')
         self.password = 'hello123'
-        self.user.first_name = 'Joe'
+        self.user.name = 'Joe'
         self.user.middle_name = 'Jr'
         self.user.birth_date = datetime.datetime(2018, 5, 19)
         self.user.last_name = 'Doe'
         self.user.set_password(self.password)
+        self.token = self.user.get_jwt_token(self.user.email, self.password)
         self.user.nationality = self.user_country
 
     def test_auth_success(self):
@@ -54,5 +55,55 @@ class APITestCase(TestCase):
                                    'birth_date': '2018-05-19T00:00:00',
                                    'nationality': 'United States'})
 
-# Header for token:
-# Authorization: Bearer eyJhbGciOiJIUzI1NiIsI
+    def test_auth_no_user(self):
+        response = self.client.post(self.url,
+                                    data={'email': 'joe_no_joe@mail.com',
+                                          'password': self.password},
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 404)
+        results = response.json()
+        self.assertIn('No such user', results['message'])
+
+    def test_incorrect_password(self):
+        response = self.client.post(self.url,
+                                    data={'email': 'joe@mail.com',
+                                          'password': self.password+'456'},
+                                    content_type="application/json")
+        self.assertEqual(response.status_code, 401)
+        results = response.json()
+        self.assertIn('Password is incorrect.', results['message'])
+
+    def test_wrong_method(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 405)
+        results = response.json()
+        self.assertIn('Only POST method is allowed.', results['message'])
+
+    def test_profile_success(self):
+        url = reverse('profile')
+        response = self.client.get(url, {'password': 'hello123'}, HTTP_Authorization='Bearer {}'.format(self.token))
+        self.assertEqual(response.status_code, 200)
+        results = response.json()
+        results.pop('pk')
+        self.assertEqual(results, {
+            'first_name': 'Joe',
+            'last_name': 'Doe',
+            'middle_name': 'Jr',
+            'birth_date': '2018-05-19T00:00:00',
+            'nationality': 'United States',
+            'token': self.token,
+        })
+
+    def test_profile_no_token(self):
+        url = reverse('profile')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 401)
+        results = response.json()
+        self.assertIn('User is not authorized.', results['message'])
+
+    def test_profile_wrong_token(self):
+        url = reverse('profile')
+        response = self.client.get(url, HTTP_Authorization='Bearer {}'.format(self.token+'foo'))
+        self.assertEqual(response.status_code, 401)
+        results = response.json()
+        self.assertIn('User is not authorized.', results['message'])

@@ -15,6 +15,9 @@ Including another URLconf
 """
 from django.urls import path, include
 
+from  userauth.views import profile
+
 urlpatterns = [
     path('api/', include('userauth.urls')),
+    path('profiles/me/', profile, name='profile'),
 ]
